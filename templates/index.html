@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Search</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: #fff; padding: 2rem; }
+        .navbar { display: flex; justify-content: space-between; padding: 1rem; background-color: #131921; }
+        .navbar a { color: #fff; text-decoration: none; }
+        .navbar a:hover { text-decoration: underline; }
+        .search-container { text-align: center; margin-bottom: 2rem; }
+        .search-input { width: 60%; padding: 5px; }
+        .search-button { padding: 5px 10px; background-color: #febd69; border: none; cursor: pointer; }
+        .results-table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
+        .results-table th, .results-table td { border: 1px solid #ddd; padding: 8px; }
+        .results-table tr:nth-child(even) { background-color: #f2f2f2; }
+        .results-table tr:hover { background-color: #ddd; }
+        .results-table th { padding-top: 12px; padding-bottom: 12px; text-align: left; background-color: #f90; color: white; }
+        .results-table img { width: 64px; height: 64px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <a href="/">Search In Amazon</a>
+            <a href="/past_searches">My Past Searches</a>
+        </nav>
+        <h1>Amazon Search</h1>
+        <div class="search-container">
+            <input class="search-input" type="text" id="searchQuery" placeholder="Search for a product">
+            <button class="search-button" onclick="handleSearch()">Search</button>
+        </div>
+        <table class="results-table" id="resultsTable">
+        </table>
+    </div>
+    <script>
+        async function handleSearch() {
+            const responseCheck = await fetch(`/search_check`);
+            const stopSearch = await responseCheck.json();
+            if (stopSearch.stop) {
+                alert("Daily searches cap reached. Consider upgrading to the premium service in order to search for more items.");
+            } else {
+                const query = document.getElementById("searchQuery").value;
+                const response = await fetch(`/search?query=${query}`);
+                const results = await response.json();
+                displaySearchResults(results);
+            }
+        }
+
+        function displaySearchResults(results) {
+            const table = document.getElementById("resultsTable");
+            table.innerHTML = ""; // Clear existing content
+
+            const rowh = table.insertRow();
+            let cellh = rowh.insertCell();
+            cellh.innerHTML = `<label>Name</label>`;
+            cellh = rowh.insertCell();
+            cellh.innerHTML = `<label>Image</label>`;
+
+            results.forEach(result => {
+                const row = table.insertRow();
+                let cell = row.insertCell();
+                cell.innerHTML = `<button onclick="handleButtonClick('${result.Name.replace(/'/g, "\\'")}')">${result.Name ?? "Not Found"}</button>`;
+                const imgCell = row.insertCell();
+                imgCell.innerHTML = `<img src="${result.Image}" alt="${result.Name ?? "Not Found"}">`;
+            });
+        }
+
+        function displayLaterSearchResults(results) {
+            const table = document.getElementById("resultsTable");
+            table.innerHTML = ""; // Clear existing content
+
+            const tableHeaders = ["Item", "Rating", "Amazon.com", "Amazon.ca", "Amazon.co.uk", "Amazon.de", "Image"];
+            const row1 = table.insertRow();
+            tableHeaders.forEach(header => {
+                let cell1 = row1.insertCell();
+                cell1.innerHTML = `<label>${header}</label>`
+            });
+
+            results.forEach(result => {
+                const row = table.insertRow();
+
+                let cell = row.insertCell();
+                cell.innerHTML = `<label>${result.Name}</label>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = result.Rating === null ? `<label>Not Found</label>` : `<label>${result.Rating}</label>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = result.Price_Amazon_com === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_com}" target="_blank">${result.Price_Amazon_com}</a>`;
+
+                cell = row.insertCell();
+                cell.innerHTML =  result.Price_Amazon_ca === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_ca}" target="_blank">${result.Price_Amazon_ca}</a>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = result.Price_Amazon_co_uk === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_co_uk}" target="_blank">${result.Price_Amazon_co_uk}</a>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = result.Price_Amazon_de === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_de}" target="_blank">${result.Price_Amazon_de}</a>`;
+
+                const imgCell = row.insertCell();
+                imgCell.innerHTML = `<img src="${result.Image}" alt="${result.Name ?? "Not Found"}">`;
+            });
+        }
+
+        async function handleButtonClick(name) {
+            const response = await fetch(`/button_click?name=${encodeURIComponent(name)}`);
+            const result = await response.json();
+            displayLaterSearchResults([result]);
+        }
+
+    </script>
+</body>
+</html>

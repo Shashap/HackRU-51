@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Past Searches</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: #fff; padding: 2rem; }
+        .navbar { display: flex; justify-content: space-between; padding: 1rem; background-color: #131921; }
+        .navbar a { color: #fff; text-decoration: none; }
+        .navbar a:hover { text-decoration: underline; }
+        .results-table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
+        .results-table th, .results-table td { border: 1px solid #ddd; padding: 8px; }
+        .results-table tr:nth-child(even) { background-color: #f2f2f2; }
+        .results-table tr:hover { background-color: #ddd; }
+        .results-table th { padding-top: 12px; padding-bottom: 12px; text-align: left; background-color: #f90; color: white; }
+        .results-table img { width: 64px; height: 64px; }
+    </style>
+</head>
+<body onload="fetchPastSearches()">
+    <div class="container">
+        <nav class="navbar">
+            <a href="/">Search In Amazon</a>
+            <a href="/past_searches">My Past Searches</a>
+        </nav>
+        <h1>My Past Searches</h1>
+        <table class="results-table" id="pastSearchesTable">
+        </table>
+    </div>
+    <script>
+        async function fetchPastSearches() {
+            const response = await fetch('/fetch_past_searches');
+            const pastSearches = await response.json();
+            displayPastSearches(pastSearches);
+        }
+
+        function displayPastSearches(pastSearches) {
+            const table = document.getElementById("pastSearchesTable");
+            table.innerHTML = ""; // Clear existing content
+
+            const tableHeaders = ["Query", "Time", "Amazon.com", "Amazon.ca", "Amazon.co.uk", "Amazon.de", "Image"];
+            const row1 = table.insertRow();
+            tableHeaders.forEach(header => {
+                debugger
+                let cell1 = row1.insertCell();
+                cell1.innerHTML = `<label>${header}</label>`
+            });
+
+            pastSearches.forEach(search => {
+                const row = table.insertRow();
+
+                let cell = row.insertCell();
+                cell.innerHTML = `<label>${search.Query}</label>`;
+
+                cell = row.insertCell();
+                let timestamp = new Date(search.Time);
+                let searchTime = timestamp.toISOString().replace("T", " ").substring(0, 19);
+                cell.innerHTML = `<label>${searchTime}</label>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = search.Price_Amazon_com === null ? `<label>Not Found</label>` : `<a href="${search.Link_Amazon_com}" target="_blank">${search.Price_Amazon_com}</a>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = search.Price_Amazon_ca === null ? `<label>Not Found</label>` : `<a href="${search.Link_Amazon_ca}" target="_blank">${search.Price_Amazon_ca}</a>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = search.Price_Amazon_co_uk === null ? `<label>Not Found</label>` : `<a href="${search.Link_Amazon_co_uk}" target="_blank">${search.Price_Amazon_co_uk}</a>`;
+
+                cell = row.insertCell();
+                cell.innerHTML = search.Price_Amazon_de === null ? `<label>Not Found</label>` : `<a href="${search.Link_Amazon_de}" target="_blank">${search.Price_Amazon_de}</a>`;
+
+                const imgCell = row.insertCell();
+                imgCell.innerHTML = `<img src="${search.Image}" alt="${search.Name}">`;
+            });
+        }
+    </script>
+</body>
+</html>
