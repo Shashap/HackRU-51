@@ -4,38 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amazon Search</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
-        .container { max-width: 1200px; margin: 0 auto; background-color: #fff; padding: 2rem; }
-        .navbar { display: flex; justify-content: space-between; padding: 1rem; background-color: #131921; }
-        .navbar a { color: #fff; text-decoration: none; }
-        .navbar a:hover { text-decoration: underline; }
-        .search-container { text-align: center; margin-bottom: 2rem; }
-        .search-input { width: 60%; padding: 5px; }
-        .search-button { padding: 5px 10px; background-color: #febd69; border: none; cursor: pointer; }
-        .results-table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
-        .results-table th, .results-table td { border: 1px solid #ddd; padding: 8px; }
-        .results-table tr:nth-child(even) { background-color: #f2f2f2; }
-        .results-table tr:hover { background-color: #ddd; }
-        .results-table th { padding-top: 12px; padding-bottom: 12px; text-align: left; background-color: #f90; color: white; }
-        .results-table img { width: 64px; height: 64px; }
-    </style>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                background-image: url('https://www.meex.co.il/wp-content/uploads/2022/10/shop_logos_9.png');
+                background-size: cover;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                background-color: rgba(255,255,255,0.8);
+                padding: 2rem;
+            }
+            .chat-button {
+                position: fixed;
+                bottom: 1rem;
+                left: 1rem;
+                padding: 1rem;
+                background-color: #f90;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            .chat-box {
+                position: fixed;
+                bottom: 1rem;
+                left: 1rem;
+                width: 300px;
+                max-height: 400px;
+                background-color: white;
+                border: 1px solid #ddd;
+                padding: 1rem;
+                display: none;
+                overflow-y: auto;
+            }
+            .chat-close {
+                position: absolute;
+                top: 0;
+                right: 0;
+                padding: 5px;
+                cursor: pointer;
+            }
+            .chat-messages {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            .chat-input {
+                width: 100%;
+            }
+        </style>
 </head>
 <body>
-    <div class="container">
-        <nav class="navbar">
-            <a href="/">Search In Amazon</a>
-            <a href="/past_searches">My Past Searches</a>
-        </nav>
-        <h1>Amazon Search</h1>
-        <div class="search-container">
-            <input class="search-input" type="text" id="searchQuery" placeholder="Search for a product">
-            <button class="search-button" onclick="handleSearch()">Search</button>
+    <button class="chat-button" onclick="toggleChat()">Chat</button>
+        <div class="chat-box" id="chatBox">
+            <span class="chat-close" onclick="toggleChat()">X</span>
+            <div class="chat-messages" id="chatMessages"></div>
+            <input class="chat-input" type="text" id="chatInput" onkeypress="handleChatInput(event)">
         </div>
-        <table class="results-table" id="resultsTable">
-        </table>
-    </div>
     <script>
+        async function handleSearch() {
+            const responseCheck = await fetch(`/search_check`);
+            const stopSearch = await responseCheck.json();
+            if (stopSearch.stop) {
+                alert("Daily searches cap reached. Consider upgrading to the premium service in order to search for more items.");
+            } else {
+                const query = document.getElementById("searchQuery").value;
+                const response = await fetch(`/search?query=${query}`);
+                const results = await response.json();
+                displaySearchResults(results);
+            }
+        }
+
         async function handleSearch() {
             const responseCheck = await fetch(`/search_check`);
             const stopSearch = await responseCheck.json();
@@ -68,49 +108,30 @@
             });
         }
 
-        function displayLaterSearchResults(results) {
-            const table = document.getElementById("resultsTable");
-            table.innerHTML = ""; // Clear existing content
-
-            const tableHeaders = ["Item", "Rating", "Amazon.com", "Amazon.ca", "Amazon.co.uk", "Amazon.de", "Image"];
-            const row1 = table.insertRow();
-            tableHeaders.forEach(header => {
-                let cell1 = row1.insertCell();
-                cell1.innerHTML = `<label>${header}</label>`
-            });
-
-            results.forEach(result => {
-                const row = table.insertRow();
-
-                let cell = row.insertCell();
-                cell.innerHTML = `<label>${result.Name}</label>`;
-
-                cell = row.insertCell();
-                cell.innerHTML = result.Rating === null ? `<label>Not Found</label>` : `<label>${result.Rating}</label>`;
-
-                cell = row.insertCell();
-                cell.innerHTML = result.Price_Amazon_com === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_com}" target="_blank">${result.Price_Amazon_com}</a>`;
-
-                cell = row.insertCell();
-                cell.innerHTML =  result.Price_Amazon_ca === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_ca}" target="_blank">${result.Price_Amazon_ca}</a>`;
-
-                cell = row.insertCell();
-                cell.innerHTML = result.Price_Amazon_co_uk === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_co_uk}" target="_blank">${result.Price_Amazon_co_uk}</a>`;
-
-                cell = row.insertCell();
-                cell.innerHTML = result.Price_Amazon_de === null ? `<label>Not Found</label>` : `<a href="${result.Link_Amazon_de}" target="_blank">${result.Price_Amazon_de}</a>`;
-
-                const imgCell = row.insertCell();
-                imgCell.innerHTML = `<img src="${result.Image}" alt="${result.Name ?? "Not Found"}">`;
-            });
+        function toggleChat() {
+            const chatBox = document.getElementById('chatBox');
+            chatBox.style.display = chatBox.style.display === 'none' ? 'block' : 'none';
         }
 
-        async function handleButtonClick(name) {
-            const response = await fetch(`/button_click?name=${encodeURIComponent(name)}`);
-            const result = await response.json();
-            displayLaterSearchResults([result]);
+        function handleChatInput(event) {
+            if (event.key === 'Enter') {
+                const chatInput = document.getElementById('chatInput');
+                const message = chatInput.value;
+                chatInput.value = '';
+                addMessageToChat('You', message);
+
+                // Replace with actual call to your server/database
+                setTimeout(() => addMessageToChat('Server', 'This is a response from the server'), 1000);
+            }
         }
 
+        function addMessageToChat(sender, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageElement = document.createElement('p');
+            messageElement.textContent = `${sender}: ${message}`;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        }
     </script>
 </body>
 </html>
